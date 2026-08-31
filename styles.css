@@ -61,7 +61,10 @@ button {
 
 .price-detail {
   width: 100%;
+  /* 手机保持满宽；平板、折叠屏和横屏超过 480px 后居中，避免价格列被过度拉散。 */
+  max-width: 480px;
   min-height: 100dvh;
+  margin-inline: auto;
   /* JS 在末尾时段无法顶到表头下方时，动态写入最小滚动补位高度。 */
   padding-bottom: var(--current-scroll-reserve, 0px);
   overflow-anchor: none;
@@ -415,8 +418,9 @@ button {
   color: var(--price-red);
 }
 
-.price-row.listed .price-name,
-.price-row.listed .total {
+/* 最后一档由 JS 按排序结果动态标记，不再与“挂牌价”类型硬编码绑定。 */
+.price-row.is-muted .price-name,
+.price-row.is-muted .total {
   color: var(--text-secondary);
 }
 
@@ -424,7 +428,6 @@ button {
 .explanation {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   width: 100%;
   padding: 12px 12px calc(24px + env(safe-area-inset-bottom));
 }
@@ -432,15 +435,9 @@ button {
 .explanation-block {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  /* 标题、说明卡和计费提示按 Figma 统一使用 8px 垂直间距。 */
+  gap: 8px;
   min-width: 0;
-}
-
-.section-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
 }
 
 .explanation h2 {
@@ -449,13 +446,6 @@ button {
   font-size: 14px;
   font-weight: 600;
   line-height: 20px;
-}
-
-.section-title-row > span {
-  flex: 0 0 auto;
-  color: var(--text-note);
-  font-size: 12px;
-  line-height: 17px;
 }
 
 .definition-card {
@@ -502,8 +492,13 @@ button {
   font-weight: 400;
 }
 
-.billing-note p {
+.price-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
   margin: 0;
+  padding-left: 18px;
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 400;

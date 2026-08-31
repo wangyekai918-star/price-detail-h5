@@ -4,6 +4,7 @@
  * 数据流：URL 参数 / APP init payload -> state -> 四个 render 函数 -> DOM。
  * 对外能力：window.PriceDetailH5.init / setStrategy / setTerminal。
  * 维护原则：策略差异统一收敛在 STRATEGY_CONFIG，避免在模板中散落多层判断。
+ * 注意：URL、init 和 message 仅用于本地原型演示，不代表线上正式接入协议；正式开发沿用现有线上方案。
  */
 (() => {
   "use strict";
@@ -14,7 +15,13 @@
    * @typedef {Object} Terminal
    * @property {string} id - APP 与 H5 之间使用的稳定标识。
    * @property {string} label - 页面展示名称。
-   * @property {[number, number, number]} serviceFees - 会员、优惠、挂牌三档服务费，单位元/度。
+   * @property {TerminalPriceTier[]} priceTiers - 可乱序下发的价格档位，由 H5 按展示规则排序。
+   *
+   * @typedef {Object} TerminalPriceTier
+   * @property {string} id - 价格类型稳定标识，例如 member / discount / listed。
+   * @property {string} label - 价格名称。
+   * @property {number} serviceFee - 该档服务费，单位元/度。
+   * @property {boolean} isApplicable - 用户当前实际可享受的价格；每个终端必须且只能有一项为 true。
    *
    * @typedef {Object} ScheduleItem
    * @property {string} start - 起始时间，包含该时刻，格式 HH:mm。
@@ -30,6 +37,7 @@
    * @property {number} electricity - 电费。
    * @property {number} service - 服务费。
    * @property {boolean} [featured] - 是否使用红色强调总价。
+   * @property {boolean} [muted] - 是否作为最后一档使用灰色弱化。
    * @property {string} [icon] - 可选的充/放方向图标。
    */
 
@@ -38,8 +46,8 @@
   // ---------------------------------------------------------------------------
 
   /**
-   * 策略 id 同时用于 URL、APP Bridge 和 DOM data-strategy，属于稳定接口字段。
-   * label 仅负责页面展示，业务判断必须使用 id。
+   * 策略 id 用于本原型内部状态和 DOM data-strategy；线上实际字段以现有业务方案为准。
+   * label 仅负责页面展示，本原型内部判断使用 id。
    */
   const STRATEGIES = [
     { id: "immediate", label: "立即充电" },
@@ -50,12 +58,33 @@
 
   /**
    * 默认终端仅用于本地预览和未下发终端数据时的兜底。
-   * serviceFees 顺序固定为：[黑钻会员价服务费, 优惠价服务费, 挂牌价服务费]。
+   * priceTiers 的传入顺序不参与展示：isApplicable 项始终置顶并标红，其余档位按总价升序排列。
    */
   const TERMINALS = [
-    { id: "dc", label: "直流快充", serviceFees: [0.28, 0.35, 0.4] },
-    { id: "super", label: "超级快充", serviceFees: [0.32, 0.4, 0.45] },
-    { id: "megawatt", label: "兆瓦特快", serviceFees: [0.38, 0.46, 0.52] },
+    {
+      id: "dc",
+      label: "直流快充",
+      priceTiers: [
+        { id: "listed", label: "挂牌价", serviceFee: 0.4, isApplicable: false },
+        { id: "member", label: "黑钻会员价", serviceFee: 0.28, isApplicable: true },
+        { id: "discount", label: "优惠价", serviceFee: 0.35, isApplicable: false },
+      ],
+    },
+    {
+      id: "super",
+      label: "超级快充",
+      priceTiers: [
+        { id: "discount", label: "优惠价", serviceFee: 0.4, isApplicable: true },
+        { id: "listed", label: "挂牌价", serviceFee: 0.45, isApplicable: false },
+      ],
+    },
+    {
+      id: "megawatt",
+      label: "兆瓦特快",
+      priceTiers: [
+        { id: "listed", label: "挂牌价", serviceFee: 0.52, isApplicable: true },
+      ],
+    },
   ];
 
   /**
@@ -84,7 +113,7 @@
     { start: "23:00", end: "24:00", tier: "valley" },
   ];
 
-  // 有序充电：使用精简四时段，卡片仅展示优惠价与挂牌价。
+  // 有序充电：使用精简四时段；价格类型由当前虚拟场站数据决定。
   const ORDERED_SCHEDULE = [
     { start: "00:00", end: "07:00", tier: "deepValley" },
     { start: "07:00", end: "10:00", tier: "peak" },
@@ -92,11 +121,12 @@
     { start: "17:00", end: "24:00", tier: "peak" },
   ];
 
-  // 有序充电不区分终端，使用策略级固定服务费演示数据。
-  const ORDERED_SERVICE_FEES = {
-    discount: 0.32,
-    listed: 0.46,
-  };
+  // 有序充电不显示终端切换；以下两档只是当前虚拟场站数据。
+  // 优惠价、黑钻会员价、挂牌价的有无取决于场站实际能力，不与充电策略绑定。
+  const ORDERED_PRICE_TIERS = [
+    { id: "listed", label: "挂牌价", serviceFee: 0.46, isApplicable: false },
+    { id: "discount", label: "优惠价", serviceFee: 0.32, isApplicable: true },
+  ];
 
   // 经济充放：低谷鼓励充电，高峰提高放电回馈价格。
   // 每一行仍严格满足“价格 = 电费 + 服务费”。
@@ -122,7 +152,7 @@
    * - schedule：当日时段数据；
    * - usesTerminal：是否显示终端选择；
    * - showsTierBadge：卡片左侧是否展示尖峰平谷角标；
-   * - definitions：费用说明区允许显示的 data-definition；
+   * - definitions：费用说明区稳定显示的基础字段，具体价格类型由实际价格数据补充；
    * - buildPrices：把时段数据转换为卡片价格行。
    */
   const STRATEGY_CONFIG = {
@@ -130,16 +160,16 @@
       schedule: IMMEDIATE_SCHEDULE,
       usesTerminal: true,
       showsTierBadge: true,
-      definitions: ["electricity", "service", "listed", "discount", "member"],
+      definitions: ["electricity", "service"],
       buildPrices(item, terminal) {
-        return buildImmediatePrices(TIER_META[item.tier].electricity, terminal.serviceFees);
+        return buildImmediatePrices(TIER_META[item.tier].electricity, terminal.priceTiers);
       },
     },
     ordered: {
       schedule: ORDERED_SCHEDULE,
       usesTerminal: false,
       showsTierBadge: true,
-      definitions: ["electricity", "service", "listed", "discount"],
+      definitions: ["electricity", "service"],
       buildPrices(item) {
         return buildOrderedPrices(TIER_META[item.tier].electricity);
       },
@@ -184,7 +214,7 @@
     definitionCard: document.querySelector(".definition-card"),
   };
 
-  // URL 参数用于独立预览和联调；后续 APP init payload 可以覆盖对应状态。
+  // URL 参数仅用于本地原型快速预览，不作为线上接入约定。
   const params = new URLSearchParams(window.location.search);
 
   /**
@@ -236,14 +266,46 @@
       return preset || {
         id: `terminal-${index + 1}`,
         label: value,
-        serviceFees: [...TERMINALS[0].serviceFees],
+        priceTiers: clonePriceTiers(TERMINALS[0].priceTiers),
       };
     });
   }
 
+  /** @param {TerminalPriceTier[]} tiers */
+  function clonePriceTiers(tiers) {
+    return tiers.map((tier) => ({ ...tier }));
+  }
+
+  /**
+   * priceTiers 可以由 APP 任意排序；这里只校验业务字段，不保留传入顺序的展示含义。
+   * 数据无效、价格不是有限数值或 isApplicable 不是唯一项时，整组回退到终端预设值。
+   * @param {unknown} rawTiers
+   * @param {TerminalPriceTier[]} fallbackTiers
+   * @returns {TerminalPriceTier[]}
+   */
+  function normalizePriceTiers(rawTiers, fallbackTiers) {
+    if (!Array.isArray(rawTiers) || !rawTiers.length) return clonePriceTiers(fallbackTiers);
+
+    const normalized = rawTiers.map((tier, index) => {
+      if (!tier || typeof tier !== "object") return null;
+      const rawId = typeof tier.id === "string" ? tier.id.trim() : "";
+      const id = /^[a-z0-9_-]+$/i.test(rawId) ? rawId : `price-tier-${index + 1}`;
+      const label = typeof tier.label === "string" ? tier.label.trim() : "";
+      const serviceFee = Number(tier.serviceFee);
+      if (!label || !Number.isFinite(serviceFee)) return null;
+      return { id, label, serviceFee, isApplicable: tier.isApplicable === true };
+    });
+
+    const validRows = normalized.filter(Boolean);
+    const idsAreUnique = new Set(validRows.map((tier) => tier.id)).size === validRows.length;
+    const applicableCount = validRows.filter((tier) => tier.isApplicable).length;
+    const valid = validRows.length === rawTiers.length && idsAreUnique && applicableCount === 1;
+    return valid ? validRows : clonePriceTiers(fallbackTiers);
+  }
+
   /**
    * 归一化 APP 下发的终端对象。
-   * serviceFees 缺失或不是三档时回退到预设值；正式数据还需确保三项均可转为有限数值。
+   * priceTiers 无效时整组回退，避免出现多项标红、无可享价格或非法金额。
    * @param {string|Partial<Terminal>} item
    * @param {number} index
    * @returns {Terminal}
@@ -253,12 +315,13 @@
     if (typeof item === "string") {
       return resolveTerminals(item)[0];
     }
+    if (!item || typeof item !== "object") {
+      return { ...fallback, priceTiers: clonePriceTiers(fallback.priceTiers) };
+    }
     return {
       id: item.id || `terminal-${index + 1}`,
       label: item.label || `终端${index + 1}`,
-      serviceFees: Array.isArray(item.serviceFees) && item.serviceFees.length === 3
-        ? item.serviceFees.map(Number)
-        : [...fallback.serviceFees],
+      priceTiers: normalizePriceTiers(item.priceTiers, fallback.priceTiers),
     };
   }
 
@@ -292,6 +355,12 @@
     return Number(value).toFixed(4);
   }
 
+  // priceTiers.label 可由 APP 下发，进入 innerHTML 模板前必须转义。
+  function escapeHtml(value) {
+    const entities = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+    return String(value).replace(/[&<>"']/g, (character) => entities[character]);
+  }
+
   function getActiveTerminal() {
     return state.terminals.find((item) => item.id === state.terminalId) || state.terminals[0];
   }
@@ -302,33 +371,43 @@
   // 当前数值为原型虚拟数据；正式接入时仍需保证 total = electricity + service。
   // ---------------------------------------------------------------------------
 
-  function buildImmediatePrices(electricity, serviceFees) {
-    const [memberFee, discountFee, listedFee] = serviceFees;
-    return [
-      { type: "member", featured: true, label: "黑钻会员价", total: electricity + memberFee, electricity, service: memberFee },
-      { type: "discount", label: "优惠价", total: electricity + discountFee, electricity, service: discountFee },
-      { type: "listed", label: "挂牌价", total: electricity + listedFee, electricity, service: listedFee },
-    ];
+  /**
+   * 通用价格排序规则：
+   * 1. 用户当前可享价格 isApplicable 始终置顶，并由 featured 标红；
+   * 2. 其余价格按总价从低到高排列，最贵的位于最下方；
+   * 3. 最后一项使用 muted 灰色弱化，但可享价格永不弱化。
+   *
+   * @param {number} electricity
+   * @param {TerminalPriceTier[]} priceTiers
+   * @returns {PriceRow[]}
+   */
+  function buildRankedPrices(electricity, priceTiers) {
+    const rows = priceTiers
+      .map((tier) => ({
+        type: tier.id,
+        featured: tier.isApplicable,
+        label: tier.label,
+        total: electricity + tier.serviceFee,
+        electricity,
+        service: tier.serviceFee,
+      }))
+      .sort((left, right) => {
+        if (left.featured !== right.featured) return left.featured ? -1 : 1;
+        return left.total - right.total;
+      });
+
+    return rows.map((row, index) => ({
+      ...row,
+      muted: !row.featured && index === rows.length - 1,
+    }));
+  }
+
+  function buildImmediatePrices(electricity, priceTiers) {
+    return buildRankedPrices(electricity, priceTiers);
   }
 
   function buildOrderedPrices(electricity) {
-    return [
-      {
-        type: "discount",
-        featured: true,
-        label: "优惠价",
-        total: electricity + ORDERED_SERVICE_FEES.discount,
-        electricity,
-        service: ORDERED_SERVICE_FEES.discount,
-      },
-      {
-        type: "listed",
-        label: "挂牌价",
-        total: electricity + ORDERED_SERVICE_FEES.listed,
-        electricity,
-        service: ORDERED_SERVICE_FEES.listed,
-      },
-    ];
+    return buildRankedPrices(electricity, ORDERED_PRICE_TIERS);
   }
 
   function buildEconomyPrices(item) {
@@ -550,17 +629,17 @@
 
   // ---------------------------------------------------------------------------
   // 6. 卡片模板与内容区渲染
-  // 当前模板只拼接本文件内的受控数据；若未来直接使用后台文案或图片地址，必须先转义/校验。
+  // APP 下发的价格名称使用 escapeHtml 转义；图片地址仍只允许来自本文件内的受控资源。
   // .price-grid / .price-values 的层级与 CSS 表头列对齐绑定，不应单独改动。
   // ---------------------------------------------------------------------------
 
   /** @param {PriceRow} price */
   function priceRowTemplate(price) {
     return `
-      <div class="price-row ${price.type}${price.featured ? " is-featured" : ""}">
+      <div class="price-row ${price.type}${price.featured ? " is-featured" : ""}${price.muted ? " is-muted" : ""}">
         <p class="price-name">
           ${price.icon ? `<img src="${price.icon}" alt="" />` : ""}
-          <span>${price.label}</span>
+          <span>${escapeHtml(price.label)}</span>
         </p>
         <div class="price-values">
           <span class="total">${formatPrice(price.total)}</span>
@@ -618,9 +697,17 @@
       .join("");
   }
 
-  // data-definition 由策略配置控制；is-last-visible 用于修正动态末行分隔线。
+  // 基础定义来自策略配置，价格类型定义来自实际价格数据；不能按策略写死会员价或优惠价。
+  // is-last-visible 用于修正动态末行分隔线。
   function renderDefinitions() {
-    const visibleDefinitions = new Set(STRATEGY_CONFIG[state.strategy]?.definitions || []);
+    const config = STRATEGY_CONFIG[state.strategy];
+    const visibleDefinitions = new Set(config?.definitions || []);
+    const priceTiers = state.strategy === "immediate"
+      ? getActiveTerminal()?.priceTiers || []
+      : state.strategy === "ordered"
+        ? ORDERED_PRICE_TIERS
+        : [];
+    priceTiers.forEach((tier) => visibleDefinitions.add(tier.id));
     const rows = Array.from(dom.definitionCard.querySelectorAll("[data-definition]"));
     rows.forEach((row) => {
       row.hidden = !visibleDefinitions.has(row.dataset.definition);
@@ -631,7 +718,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // 7. 状态切换与 APP Bridge
+  // 7. 状态切换与原型兼容入口
   // ---------------------------------------------------------------------------
 
   /**
@@ -675,11 +762,13 @@
     state.terminalId = terminal.id;
     renderTerminals();
     renderSchedule();
+    // 不同终端可提供不同价格类型，说明行必须与当前终端同步。
+    renderDefinitions();
     return true;
   }
 
   /**
-   * 初始化或刷新页面状态。payload 会覆盖 URL 提供的首屏默认值。
+   * 初始化或刷新本地原型状态；字段仅服务当前演示，线上接入请复用现有协议。
    *
    * @param {Object} [payload]
    * @param {Array<StrategyId|string>} [payload.supportedStrategies]
@@ -714,15 +803,15 @@
     scheduleCurrentPeriodScroll(terminalWasCollapsed !== terminalIsCollapsed);
   }
 
-  // 直接调用接口：APP 可通过 WebView 注入脚本调用以下三个方法。
+  // 原型直接调用入口：用于独立预览与内部验证，不定义线上正式调用方式。
   window.PriceDetailH5 = Object.freeze({ init, setStrategy, setTerminal });
 
   /**
-   * postMessage 兼容接口：
+   * 本地原型保留的 postMessage 兼容入口：
    * - PRICE_DETAIL_INIT：支持 { type, payload }，也兼容字段直接放在 message 上；
    * - PRICE_DETAIL_SET_STRATEGY：读取 message.strategy；
    * - PRICE_DETAIL_SET_TERMINAL：读取 message.terminalId。
-   * 当前默认运行在受控 APP WebView；若部署到普通网页，应增加 event.origin/source 白名单校验。
+   * 这不是线上协议说明；若未来作为普通网页复用，还需增加 event.origin/source 白名单校验。
    */
   window.addEventListener("message", (event) => {
     const message = event.data;
