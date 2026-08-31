@@ -1,0 +1,112 @@
+<!doctype html>
+<!--
+  价格详情 H5 页面壳
+  - 运行在 APP WebView 中，不包含 APP 原生导航栏。
+  - 策略、终端和价格卡片由 app.js 动态渲染。
+  - id 与 data-definition 是 JavaScript 查询和显隐控制的契约，修改时需同步 app.js。
+-->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover 用于兼容全面屏安全区，底部安全区由 CSS env() 处理。 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light" />
+    <title>价格详情</title>
+    <!-- 使用空 data favicon，避免静态服务额外请求 /favicon.ico 产生 404。 -->
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="price-detail" id="priceDetail">
+      <!--
+        顶部吸附区：仅包含 H5 内的策略、终端和价格表头。
+        APP 原生导航不在 H5 内重复实现。
+      -->
+      <header class="sticky-header" id="stickyHeader">
+        <div class="top-menu" id="topMenu">
+          <!--
+            策略按钮由 renderStrategies() 注入；白色 slider 是固定底层节点。
+            JS 只能删除/重建 .strategy-tab，不能整体清空 #strategyTabs，否则滑块会一并丢失。
+          -->
+          <section class="strategy-section" id="strategySection" aria-label="充电策略">
+            <div class="strategy-tabs" id="strategyTabs">
+              <span class="strategy-slider" aria-hidden="true"></span>
+            </div>
+          </section>
+
+          <!--
+            终端按钮由 renderTerminals() 注入；非立即充电策略会折叠整个区域。
+            折叠依赖 .is-collapsed 的高度与透明度动画，不能改用 hidden 或 display:none。
+          -->
+          <section class="terminal-section" id="terminalSection" aria-label="终端类型">
+            <div class="terminal-tabs" id="terminalTabs"></div>
+          </section>
+        </div>
+
+        <!--
+          表头与价格卡片共用 .price-grid / .price-columns 网格。
+          调整列宽、左内边距或列间距时，必须同步检查卡片列是否仍对齐。
+        -->
+        <div class="table-head" aria-hidden="true">
+          <div class="price-grid table-head-grid">
+            <div class="period-head">充电时段</div>
+            <div class="price-columns">
+              <div class="column-head">
+                <div class="column-title">
+                  <span>价格</span>
+                  <img src="./assets/plus@3x.png" alt="" />
+                </div>
+                <span class="column-unit">(元/度)</span>
+              </div>
+              <div class="column-head">
+                <div class="column-title">
+                  <span>电费</span>
+                  <img src="./assets/equals@3x.png" alt="" />
+                </div>
+                <span class="column-unit">(元/度)</span>
+              </div>
+              <div class="column-head">
+                <div class="column-title"><span>服务费</span></div>
+                <span class="column-unit">(元/度)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!--
+        当日时段卡片挂载点；完整内容由 renderSchedule() 一次性生成。
+        当前卡片同时使用 .is-current 与 aria-current="time" 标识，供样式和滚动定位共同查询。
+      -->
+      <section class="schedule-list" id="scheduleList" aria-label="当日分时价格"></section>
+
+      <!-- 费用说明是稳定 DOM，app.js 仅根据策略控制各 data-definition 行的显隐。 -->
+      <section class="explanation">
+        <div class="explanation-block">
+          <div class="section-title-row">
+            <h2>费用与价格</h2>
+            <span>页面仅展示当日价格</span>
+          </div>
+          <dl class="definition-card">
+            <!-- data-definition 的取值必须与 STRATEGY_CONFIG.definitions 保持一致。 -->
+            <div data-definition="electricity"><dt>电费</dt><dd>充电所消耗电量的费用，根据场站用电属性及当地电网峰平谷时段动态调整</dd></div>
+            <div data-definition="service"><dt>服务费</dt><dd>包含场站运营、设备维护与现场管理等成本</dd></div>
+            <div data-definition="listed"><dt>挂牌价</dt><dd>场站当前执行的单价</dd></div>
+            <div data-definition="discount"><dt>优惠价</dt><dd>场站的基础标准单价</dd></div>
+            <div data-definition="member"><dt>黑钻会员价</dt><dd>黑钻会员专享的优惠单价</dd></div>
+          </dl>
+        </div>
+
+        <div class="explanation-block billing-note">
+          <h2>计费与锁价</h2>
+          <p>跨日、跨时段充电将按对应日期及时段分段计费，实际费用以订单结算为准。</p>
+          <p>计费标准以启动时刻为准；充电过程中场站调整价格策略、新开通会员或会员充电跨至会员日，本单均不享受新价格与新增优惠。</p>
+        </div>
+      </section>
+    </main>
+
+    <noscript>请启用 JavaScript 以查看价格详情。</noscript>
+    <!-- 脚本放在 body 底部，确保执行时所有固定 DOM 锚点均已创建。 -->
+    <script src="./app.js"></script>
+  </body>
+</html>
