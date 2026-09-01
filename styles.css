@@ -429,7 +429,8 @@ button {
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 12px 12px calc(24px + env(safe-area-inset-bottom));
+  /* 四周设计内边距统一为 8px，底部在此基础上叠加系统安全区。 */
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
 }
 
 .explanation-block {

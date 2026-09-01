@@ -35,7 +35,7 @@
           </section>
 
           <!--
-            终端按钮由 renderTerminals() 注入；非立即充电策略会折叠整个区域。
+            终端按钮由 renderTerminals() 注入；非“充电价格”策略会折叠整个区域。
             折叠依赖 .is-collapsed 的高度与透明度动画，不能改用 hidden 或 display:none。
           -->
           <section class="terminal-section" id="terminalSection" aria-label="终端类型">
@@ -54,14 +54,14 @@
               <div class="column-head">
                 <div class="column-title">
                   <span>价格</span>
-                  <img src="./assets/plus@3x.png" alt="" />
+                  <img src="./assets/equals@3x.png" alt="" />
                 </div>
                 <span class="column-unit">(元/度)</span>
               </div>
               <div class="column-head">
                 <div class="column-title">
                   <span>电费</span>
-                  <img src="./assets/equals@3x.png" alt="" />
+                  <img src="./assets/plus@3x.png" alt="" />
                 </div>
                 <span class="column-unit">(元/度)</span>
               </div>
@@ -82,7 +82,7 @@
 
       <!--
         价格说明是稳定 DOM，app.js 根据当前页面实际展示的价格类型控制各 data-definition 行的显隐。
-        底部三条计费提示为所有策略共用文案，不参与动态显隐。
+        底部四条计费提示为所有策略共用文案，不参与动态显隐。
       -->
       <section class="explanation">
         <div class="explanation-block">
@@ -92,13 +92,14 @@
             <div data-definition="electricity"><dt>电费</dt><dd>充电所消耗电量的费用，根据场站用电属性及当地电网峰平谷时段动态调整</dd></div>
             <div data-definition="service"><dt>服务费</dt><dd>包含场站运营、设备维护与现场管理等成本</dd></div>
             <div data-definition="listed"><dt>挂牌价</dt><dd>场站的基础标准单价</dd></div>
-            <div data-definition="discount"><dt>优惠价</dt><dd>场站当前执行的单价</dd></div>
+            <div data-definition="discount"><dt>优惠价</dt><dd>基于挂牌价的优惠单价</dd></div>
             <div data-definition="member"><dt>黑钻会员价</dt><dd>黑钻会员专享的优惠单价</dd></div>
           </dl>
           <ul class="price-notes">
-            <li>红色价格为您当前享受的充电价，页面仅展示当日价格</li>
+            <li>红色价格为您当前享受的充电价，页面仅展示当日价格。</li>
             <li>跨日、跨时段充电将按对应日期及时段分段计费，实际费用以订单结算为准。</li>
             <li>计费标准以启动时刻为准；充电过程中场站调整价格策略、新开通会员或会员充电跨至会员日，本单均不享受新价格与新增优惠。</li>
+            <li>如对价格展示有疑问，可拨打客服电话400-130-0001。</li>
           </ul>
         </div>
       </section>

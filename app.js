@@ -50,10 +50,10 @@
    * label 仅负责页面展示，本原型内部判断使用 id。
    */
   const STRATEGIES = [
-    { id: "immediate", label: "立即充电" },
-    { id: "ordered", label: "有序充电" },
-    { id: "economy", label: "经济充放" },
-    { id: "discharge", label: "立即放电" },
+    { id: "immediate", label: "充电价格", legacyLabel: "立即充电" },
+    { id: "ordered", label: "有序充价格", legacyLabel: "有序充电" },
+    { id: "economy", label: "经济充放价格", legacyLabel: "经济充放" },
+    { id: "discharge", label: "放电价格", legacyLabel: "立即放电" },
   ];
 
   /**
@@ -241,10 +241,15 @@
   // 2. 外部入参与基础工具
   // ---------------------------------------------------------------------------
 
-  // 策略兼容英文 id 和中文 label；正式 APP 接入建议始终传稳定英文 id。
+  // Tab 改名后仍兼容原中文名称，避免旧的演示入参失效。
+  function findStrategy(value) {
+    return STRATEGIES.find((item) => item.id === value || item.label === value || item.legacyLabel === value);
+  }
+
+  // 策略兼容英文 id 和新旧中文 label；页面内部始终使用稳定 id。
   function normalizeStrategy(value) {
     if (!value) return null;
-    const match = STRATEGIES.find((item) => item.id === value || item.label === value);
+    const match = findStrategy(value);
     return match ? match.id : null;
   }
 
@@ -252,7 +257,7 @@
     if (!rawValue) return [...STRATEGIES];
     const values = rawValue.split(",").map((item) => item.trim()).filter(Boolean);
     const resolved = values
-      .map((value) => STRATEGIES.find((item) => item.id === value || item.label === value))
+      .map(findStrategy)
       .filter(Boolean);
     return resolved.length ? Array.from(new Map(resolved.map((item) => [item.id, item])).values()) : [...STRATEGIES];
   }
@@ -661,8 +666,9 @@
     const current = isCurrentPeriod(item, currentMinutes);
     const prices = config.buildPrices(item, terminal);
     const badges = [
-      current ? '<img class="period-badge" src="./assets/current-period@3x.png" alt="当前时段" />' : "",
+      // 尖峰平谷图标始终占左侧方形起点，当前时段标识追加在其右侧。
       config.showsTierBadge ? `<img class="period-badge" src="${tier.icon}" alt="${tier.label}" />` : "",
+      current ? '<img class="period-badge" src="./assets/current-period@3x.png" alt="当前时段" />' : "",
     ].filter(Boolean).join("");
     return `
       <article class="price-card price-grid${current ? " is-current" : ""}" data-strategy="${state.strategy}" data-tier="${item.tier}"${current ? ' aria-current="time"' : ""}>
@@ -781,7 +787,7 @@
     const terminalWasCollapsed = dom.terminalSection.classList.contains("is-collapsed");
     if (Array.isArray(payload.supportedStrategies)) {
       state.strategies = payload.supportedStrategies
-        .map((value) => STRATEGIES.find((item) => item.id === value || item.label === value))
+        .map(findStrategy)
         .filter(Boolean);
       if (!state.strategies.length) state.strategies = [STRATEGIES[0]];
     }
