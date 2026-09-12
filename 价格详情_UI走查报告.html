@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>价格详情 H5 · UI 走查报告</title>
+  <style>
+    :root {
+      --bg: #f2f5fa;
+      --panel: #ffffff;
+      --panel-soft: #f7f9fc;
+      --text: #15171b;
+      --muted: #687184;
+      --line: #e2e7ef;
+      --red: #ed3e46;
+      --red-soft: #fff0f1;
+      --blue: #008fc7;
+      --blue-soft: #eaf8fd;
+      --green: #19a974;
+      --shadow: 0 16px 44px rgba(24, 39, 75, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      color: var(--text);
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body { margin: 0; }
+
+    a { color: inherit; text-underline-offset: 4px; }
+
+    button { font: inherit; }
+
+    .page {
+      width: min(1160px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 54px 0 80px;
+    }
+
+    .hero {
+      padding: 20px 4px 42px;
+    }
+
+    h1 {
+      max-width: 850px;
+      margin: 0;
+      font-size: 58px;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.045em;
+    }
+
+    .version {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      align-items: center;
+      margin: 28px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .version-label {
+      color: #343a46;
+      font-weight: 650;
+    }
+
+    .count-pill {
+      display: inline-flex;
+      gap: 9px;
+      align-items: center;
+      margin-top: 30px;
+      padding: 10px 15px;
+      border: 1px solid #dce2ea;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      color: #343a46;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .count-pill::before {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--red);
+      content: "";
+      box-shadow: 0 0 0 5px rgba(237, 62, 70, 0.1);
+    }
+
+    .bugs {
+      display: grid;
+      gap: 18px;
+    }
+
+    .bug {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .bug-main {
+      display: grid;
+      grid-template-columns: 62px minmax(0, 1fr);
+      gap: 18px;
+      padding: 24px 26px 20px;
+    }
+
+    .bug-index {
+      display: flex;
+      width: 48px;
+      height: 48px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: var(--red-soft);
+      color: var(--red);
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .bug h3 {
+      margin: 1px 0 9px;
+      font-size: 19px;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
+    }
+
+    .bug p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .emphasis {
+      display: inline-block;
+      margin: 12px 0 0;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: var(--red-soft);
+      color: #c92d35;
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .fix {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-left: 3px solid var(--blue);
+      border-radius: 0 10px 10px 0;
+      background: var(--blue-soft);
+      color: #315568;
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .fix strong { color: #153746; }
+
+    .evidence {
+      margin: 0;
+      padding: 16px;
+      border-top: 1px solid var(--line);
+      background: var(--panel-soft);
+    }
+
+    .evidence button {
+      display: block;
+      width: fit-content;
+      max-width: min(100%, 560px);
+      margin: 0 auto;
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid #d9dfe8;
+      border-radius: 14px;
+      background: #fff;
+      cursor: zoom-in;
+    }
+
+    .evidence img {
+      display: block;
+      width: auto;
+      max-width: 100%;
+      max-height: 280px;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .evidence figcaption {
+      margin-top: 9px;
+      color: #7a8393;
+      font-size: 12px;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    details {
+      margin-top: 15px;
+      border: 1px solid #dbe2ea;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    summary {
+      padding: 13px 15px;
+      color: #26313c;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .motion-spec {
+      padding: 0 15px 16px;
+    }
+
+    .code-details {
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .code-details pre {
+      margin: 0;
+      border-radius: 0;
+    }
+
+    .motion-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin: 2px 0 14px;
+    }
+
+    .motion-grid > div {
+      padding: 12px;
+      border-radius: 10px;
+      background: var(--panel-soft);
+    }
+
+    .motion-grid b {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 13px;
+    }
+
+    .motion-grid span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    pre {
+      margin: 10px 0 0;
+      padding: 15px;
+      overflow-x: auto;
+      border-radius: 11px;
+      background: #151b24;
+      color: #e9edf3;
+      font: 12px/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      white-space: pre;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: #edf0f4;
+      color: #364152;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      font-size: inherit;
+    }
+
+    .plain-list {
+      margin: 12px 0 0;
+      padding-left: 20px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    footer {
+      margin-top: 20px;
+      color: #7b8492;
+      font-size: 12px;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    dialog {
+      width: min(1500px, calc(100% - 28px));
+      max-width: none;
+      max-height: calc(100dvh - 28px);
+      padding: 0;
+      overflow: auto;
+      border: 0;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 24px 90px rgba(0, 0, 0, .28);
+    }
+
+    dialog::backdrop {
+      background: rgba(13, 18, 26, .72);
+      backdrop-filter: blur(5px);
+    }
+
+    .dialog-bar {
+      position: sticky;
+      z-index: 1;
+      top: 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, .94);
+      backdrop-filter: blur(10px);
+    }
+
+    .dialog-bar span { font-size: 14px; font-weight: 700; }
+
+    .dialog-bar button {
+      padding: 7px 11px;
+      border: 0;
+      border-radius: 8px;
+      background: #eef1f5;
+      cursor: pointer;
+    }
+
+    dialog img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    @media (max-width: 720px) {
+      .page { width: min(100% - 20px, 1160px); padding-top: 24px; }
+      .hero { padding: 10px 4px 28px; }
+      h1 { font-size: 58px; }
+      .bug-main { grid-template-columns: 1fr; padding: 20px; }
+      .bug-index { width: 42px; height: 42px; }
+      .evidence { padding: 14px; }
+      .evidence img { max-height: 200px; }
+      .motion-grid { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page { width: 100%; padding: 0; }
+      .bug { box-shadow: none; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <h1>价格详情 H5<br />UI 走查报告</h1>
+      <p class="version">
+        <span class="version-label">走查版本：2026-09-12</span>
+        <a href="http://c2.teld9.xyz/cvmobile/HarmonyH5/PriceDetailsV2?ifOrderlyCharging=1&amp;ifV2G=1&amp;canDiscount=1&amp;ifDischarge=1&amp;rideShareTag=&amp;recVersion=0&amp;selectTag=%E7%9B%B4%E6%B5%81%E5%BF%AB%E5%85%85%E3%80%81%E7%9B%B4%E6%B5%81%E6%85%A2%E5%85%85&amp;stationID=6b3af652-c658-460c-899b-7eb04cf40555&amp;selectChargeType=%E5%85%85%E7%94%B5%E4%BB%B7%E6%A0%BC&amp;plusVersion=lite&amp;userLevel=L3&amp;isplus=1&amp;tagInfo=%5B%7B%22tagID%22%3A%22%22,%22tagName%22%3A%22%E5%8E%86%E5%8F%B2%E9%AB%98%E6%B6%88%E8%B4%B9%E7%94%A8%E6%88%B7%22%7D%5D&amp;ifHLHTSta=0" target="_blank" rel="noreferrer">打开开发页 ↗</a>
+        <a href="https://wangyekai918-star.github.io/price-detail-h5/?currentTime=14:30" target="_blank" rel="noreferrer">打开参考页 ↗</a>
+      </p>
+      <div class="count-pill">共 10 项需要修改</div>
+    </header>
+
+    <section aria-label="需修改项目">
+      <div class="bugs">
+        <article class="bug">
+          <div class="bug-main">
+            <div class="bug-index">01</div>
+            <div>
+              <h3>当前时段滚动触发范围不对，且速度参数没有按交付实现</h3>
+              <p>当前代码把同一个 <code>getLocation()</code> 用在首次进入、切换策略和切换终端三个场景，并统一执行 500ms 线性滚动。这样来回切换时列表会反复滚动，用户已经开始操作时也可能被动画抢走控制权。</p>
+              <div class="emphasis">重点：滚动动画只能在首次进入页面时播放一次。</div>
+              <div class="fix"><strong>修改方式：</strong>首次价格数据渲染完成后执行一次带缓动的自动滚动；切换策略时直接定位当前时段，不播放动画；切换终端时保持原来的滚动位置。动画进行中一旦检测到触摸、拖动、滚轮或滚动按键，应立即取消。</div>
+
+              <details open>
+                <summary>滚动参数与实现逻辑</summary>
+                <div class="motion-spec">
+                  <div class="motion-grid">
+                    <div><b>播放时长</b><span>固定 450ms</span></div>
+                    <div><b>触发范围</b><span>仅首次进入页面播放一次</span></div>
+                    <div><b>缓动</b><span>Ease Out Quart：前快后慢</span></div>
+                  </div>
+                  <p><strong>时长规则：</strong>滚动动画统一使用 <code>450ms</code>。</p>
+                  <details class="code-details">
+                    <summary>查看完整实现代码</summary>
+                    <pre><code>// 页面生命周期内只允许首批有效价格数据渲染后进入一次
+let didPlayInitialScroll = false;
+let animationId = 0;
+
+function cancelAutoScroll() {
+  if (!animationId) return;
+  cancelAnimationFrame(animationId);
+  animationId = 0;
+}
+
+function getCurrentPeriodTarget(scroller, currentCard) {
+  const scrollerTop = scroller.getBoundingClientRect().top;
+  const cardTop = currentCard.getBoundingClientRect().top;
+  const rawTarget = scroller.scrollTop + cardTop - scrollerTop;
+  const maxScrollTop = scroller.scrollHeight - scroller.clientHeight;
+  return Math.max(0, Math.min(rawTarget, maxScrollTop));
+}
+
+function runInitialCurrentPeriodScroll(scroller, currentCard) {
+  if (didPlayInitialScroll || !currentCard) return;
+  didPlayInitialScroll = true;
+
+  const start = scroller.scrollTop;
+  const target = getCurrentPeriodTarget(scroller, currentCard);
+  const distance = target - start;
+  const duration = 450;
+
+  if (Math.abs(distance) &lt; 1) return;
+
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    scroller.scrollTop = target;
+    return;
+  }
+
+  const startedAt = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - startedAt) / duration);
+    const eased = 1 - Math.pow(1 - t, 4); // Ease Out Quart
+    scroller.scrollTop = start + distance * eased;
+    if (t &lt; 1) {
+      animationId = requestAnimationFrame(step);
+    } else {
+      animationId = 0;
+    }
+  };
+  animationId = requestAnimationFrame(step);
+}
+
+// 首批价格数据渲染完成后调用；双 RAF 避免读取到未稳定的布局位置
+function onInitialPriceRendered(scroller) {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const currentCard = scroller.querySelector("[data-current-period='true']");
+    runInitialCurrentPeriodScroll(scroller, currentCard);
+  }));
+}
+
+// 用户主动操作时立即取消
+["touchstart", "pointerdown", "wheel"].forEach((name) => {
+  scroller.addEventListener(name, cancelAutoScroll, {
+    capture: true,
+    passive: true
+  });
+});
+window.addEventListener("keydown", (event) => {
+  if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "]
+      .includes(event.key)) cancelAutoScroll();
+}, true);
+
+// Tab：重新渲染后直接定位，不播放动画
+function onStrategyRendered(scroller) {
+  const currentCard = scroller.querySelector("[data-current-period='true']");
+  if (currentCard) scroller.scrollTop = getCurrentPeriodTarget(scroller, currentCard);
+}
+
+// 终端：渲染前保存 scrollTop，渲染后原样恢复
+function rerenderTerminal(scroller, renderTerminalPriceList) {
+  const previousScrollTop = scroller.scrollTop;
+  renderTerminalPriceList();
+  requestAnimationFrame(() => { scroller.scrollTop = previousScrollTop; });
+}</code></pre>
+                  </details>
+                  <ul class="plain-list">
+                    <li>用双 <code>requestAnimationFrame</code> 等待列表 DOM 和样式稳定后再读取位置。</li>
+                    <li>不要把自动滚动放进通用的“数据刷新完成”回调，否则策略和终端切换都会重复触发。</li>
+                  </ul>
+                </div>
+              </details>
+            </div>
+          </div>
+        </article>
+
+        <article class="bug">
+          <div class="bug-main">
+            <div class="bug-index">02</div>
+            <div>
+              <h3>数字字体包与设计交付不一致</h3>
+              <p>当前时间和价格数字的轮廓、笔画明显偏粗，与设计交付的 D-DIN PRO 600 SemiBold 显示效果不一致。</p>
+              <div class="fix"><strong>修改方式：</strong>替换为设计交付的 <code>D-DIN-PRO-600-SemiBold.woff2</code> 字体包，字重保持 <code>600</code>；同时更新资源版本，确认页面实际加载的是新字体文件。</div>
+            </div>
+          </div>
+          <figure class="evidence">
+            <button type="button" data-image="./audit-assets/font-package-reference.png" data-title="数字字体显示偏粗">
+              <img src="./audit-assets/font-package-reference.png" alt="数字字体显示偏粗的标注截图" loading="lazy" />
+            </button>
+            <figcaption>时间和价格数字显示偏粗，需替换为设计交付的字体包。</figcaption>
+          </figure>
+        </article>
+
+        <article class="bug">
+          <div class="bug-main">
+            <div class="bug-index">03</div>
+            <div>
+              <h3>终端标签直接消失，表头上移过于突兀</h3>
+              <p>从“充电价格”切到其他策略时，终端节点会直接卸载，表头瞬间跳到上方，没有形成“终端区域被折叠起来”的感觉。</p>
+              <div class="fix"><strong>修改方式：</strong>不要先使用 <code>display:none</code>。终端内容先用 160ms 淡出，40ms 后开始收起高度；<code>max-height</code> 与 <code>padding-top</code> 使用 320ms、<code>cubic-bezier(0.22, 0.8, 0.24, 1)</code>。表头保持正常文档流，让它随终端区域收起连续上移。</div>
+            </div>
+          </div>
+          <figure class="evidence">
+            <button type="button" data-image="./audit-assets/terminal-collapse-reference.png" data-title="终端标签区域突然消失">
+              <img src="./audit-assets/terminal-collapse-reference.png" alt="终端标签区域突然消失的标注截图" loading="lazy" />
+            </button>
+            <figcaption>红框区域切换策略时应连续折叠，不能瞬间消失。</figcaption>
+          </figure>
+        </article>
+
+        <article class="bug">
+          <div class="bug-main">
+            <div class="bug-index">04</div>
+            <div>
+              <h3>表头与价格列表没有左对齐</h3>
+              <p>表头使用 37% 比例，卡片内部又单独叠加外边距、左 padding、gap 和 <code>calc(37% - 10px)</code>。两套公式在不同屏宽下会产生列起点偏差。</p>
+              <div class="fix"><strong>修改方式：</strong>表头和卡片外层共用 <code>grid-template-columns: minmax(0,1fr) minmax(0,2fr)</code>；右侧价格区再共同使用三列等分网格。不要分别计算两套宽度。</div>
+            </div>
+          </div>
+          <figure class="evidence">
+            <button type="button" data-image="./audit-assets/grid-alignment-reference.png" data-title="表头与卡片价格列未左对齐">
+              <img src="./audit-assets/grid-alignment-reference.png" alt="表头与价格列表未左对齐的标注截图" loading="lazy" />
+            </button>
+            <figcaption>红线显示表头“价格”与卡片价格内容的左边界不一致。</figcaption>
+          </figure>
+        </article>
+
+        <article class="bug">
+          <div class="bug-main">
+            <div class="bug-index">05</div>
+            <div>
+              <h3>当前时段卡片使用普通 border，内部会缩进 1px</h3>
+              <p>高亮卡多出的 1px 边框参与盒模型，导致它的内部可用空间比普通卡小，时间和价格列坐标会产生轻微变化。</p>
+              <div class="fix"><strong>修改方式：</strong>去掉真实 border，使用 <code>box-shadow: inset 0 0 0 1px #00ACE5</code> 绘制内描边。这样视觉保持不变，但不会改变卡片内部尺寸和列坐标。</div>
+            </div>
+          </div>
+          <figure class="evidence">
+            <button type="button" data-image="./audit-assets/current-card-inset-reference.png" data-title="当前卡片内容缩进 1px">
+              <img src="./audit-assets/current-card-inset-reference.png" alt="当前卡片内容缩进一像素的标注截图" loading="lazy" />
+            </button>
+            <figcaption>红色区域表示当前卡片因普通 border 产生的 1px 内部缩进。</figcaption>
+          </figure>
+        </article>
+
+        <article class="bug">
+          <div class="bug-main">
+            <div class="bug-index">06</div>
+            <div>
+              <h3>策略 Tab 外层白色父容器的圆角会漏出页面灰底</h3>
+              <p>策略 Tab 的外层白色父容器存在圆角，圆角外侧会露出页面灰色背景。</p>
+              <div class="fix"><strong>修改方式：</strong>去掉外层白色父容器的圆角。</div>
+            </div>
+          </div>
+          <figure class="evidence">
+            <button type="button" data-image="./audit-assets/tab-parent-radius-reference.png?v=2" data-title="Tab 父级容器圆角露出页面灰底">
+              <img src="./audit-assets/tab-parent-radius-reference.png?v=2" alt="Tab 父级容器圆角露出页面灰底的标注截图" loading="lazy" />
+            </button>
+            <figcaption>去掉图中外层白色父容器的圆角。</figcaption>
+          </figure>
+        </article>
+
+        <article class="bug">
+          <div class="bug-main">
+            <div class="bug-index">07</div>
+            <div>
+              <h3>策略 Tab 外层白框高度写死，产生多余上下留白</h3>
+              <p>问题不在 Tab 组件本身，而是外面的白色父容器写死了高度，没有紧贴内部 Tab 内容，因此上下出现了额外留白。</p>
+              <div class="fix"><strong>修改方式：</strong>去掉外层白色父容器写死的 <code>height</code> / <code>min-height</code> 和多余上下 padding，让父容器高度由内容撑开；灰色 Tab 组件自身仍保持 <code>30px</code> 高。</div>
+            </div>
+          </div>
+          <figure class="evidence">
+            <button type="button" data-image="./audit-assets/tab-parent-height-reference.png" data-title="Tab 外层白框存在多余上下留白">
+              <img src="./audit-assets/tab-parent-height-reference.png" alt="Tab 外层白框上下留白的标注截图" loading="lazy" />
+            </button>
+            <figcaption>绿色标注区域为外层白框多出的上下留白，应让外层高度随内容撑开。</figcaption>
+          </figure>
+        </article>
+
+        <article class="bug">
+          <div class="bug-main">
+            <div class="bug-index">08</div>
+            <div>
+              <h3>表头整体高度偏高</h3>
+              <p>开发页表头高度为 <code>51px</code>，设计稿及参考页为 <code>46px</code>，多出的高度让表头区域偏松，并把下面的价格卡片向下挤。</p>
+              <div class="fix"><strong>修改方式：</strong>将表头外层总高度调整为 <code>46px</code>，上下 padding 按 <code>8px</code> 设置，并保持文字整体垂直居中；不要继续使用当前上下各 <code>10px</code> 的间距。</div>
+            </div>
+          </div>
+          <figure class="evidence">
+            <button type="button" data-image="./audit-assets/table-header-height-reference.png" data-title="表头高度比设计稿高 5px">
+              <img src="./audit-assets/table-header-height-reference.png" alt="开发页与参考页表头高度对比截图" loading="lazy" />
+            </button>
+            <figcaption>开发页表头为 51px，参考页为 46px，需要减少 5px。</figcaption>
+          </figure>
+        </article>
+
+        <article class="bug">
+          <div class="bug-main">
+            <div class="bug-index">09</div>
+            <div>
+              <h3>客服电话号码及格式错误</h3>
+              <p>开发页显示为 <code>4001-300001</code>，号码内容及分组格式均与设计稿不一致。</p>
+              <div class="fix"><strong>修改方式：</strong>改为 <code>400-130-0001</code>，完整文案为“如对价格展示有疑问，可拨打客服电话400-130-0001。”</div>
+            </div>
+          </div>
+        </article>
+
+        <article class="bug">
+          <div class="bug-main">
+            <div class="bug-index">10</div>
+            <div>
+              <h3>价格说明与上方时段卡片距离过近</h3>
+              <p>最后一张充电时段卡片与“价格说明”标题之间的留白不足，两块内容贴得太近，层级不清晰。</p>
+              <div class="fix"><strong>修改方式：</strong>将时段卡片列表与“价格说明”标题之间的垂直间距调整为 <code>16px</code>。</div>
+            </div>
+          </div>
+          <figure class="evidence">
+            <button type="button" data-image="./audit-assets/price-description-spacing-reference.png" data-title="价格说明与上方时段卡片距离过近">
+              <img src="./audit-assets/price-description-spacing-reference.png" alt="价格说明与上方时段卡片距离过近的标注截图" loading="lazy" />
+            </button>
+            <figcaption>红框区域留白不足，两块内容之间应保持 16px 间距。</figcaption>
+          </figure>
+        </article>
+      </div>
+    </section>
+
+    <footer>本报告仅展示当前未通过项目；问题截图由设计侧提供。</footer>
+  </main>
+
+  <dialog id="imageDialog">
+    <div class="dialog-bar">
+      <span id="dialogTitle">问题截图</span>
+      <button type="button" id="dialogClose">关闭</button>
+    </div>
+    <img id="dialogImage" alt="" />
+  </dialog>
+
+  <script>
+    // 使用用户提供的原始截图打开大图，不对图片做二次压缩或重绘。
+    const dialog = document.querySelector("#imageDialog");
+    const dialogImage = document.querySelector("#dialogImage");
+    const dialogTitle = document.querySelector("#dialogTitle");
+
+    document.querySelectorAll("[data-image]").forEach((button) => {
+      button.addEventListener("click", () => {
+        dialogImage.src = button.dataset.image;
+        dialogImage.alt = button.dataset.title;
+        dialogTitle.textContent = button.dataset.title;
+        dialog.showModal();
+      });
+    });
+
+    document.querySelector("#dialogClose").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+  </script>
+</body>
+</html>
