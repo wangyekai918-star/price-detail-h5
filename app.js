@@ -200,6 +200,10 @@
   // 首屏滚动在 DOM 稳定后启动；终端折叠总时长为 40ms 延迟 + 320ms 动画。
   const SCROLL_START_DELAY = 100;
   const HEADER_TRANSITION_DELAY = 380;
+  // 首屏定位动画以屏幕高度为距离单位：每滚动一屏增加 130ms，并限制在 420-680ms。
+  const SCROLL_MIN_DURATION = 420;
+  const SCROLL_MAX_DURATION = 680;
+  const SCROLL_DURATION_PER_VIEWPORT = 130;
 
   // 固定 DOM 查询集中管理；这些 id/class 与 index.html 构成内部契约。
   const dom = {
@@ -585,8 +589,12 @@
       return;
     }
 
-    // 距离越长动画越久，但限制在 420-680ms，兼顾可见性和等待成本。
-    const duration = Math.min(680, Math.max(420, Math.abs(distance) * 0.32));
+    // 用“滚动距离 ÷ 当前视口高度”统一不同屏幕的体感；两屏及以上封顶为 680ms。
+    const viewportHeight = Math.max(window.innerHeight, 1);
+    const duration = Math.min(
+      SCROLL_MAX_DURATION,
+      SCROLL_MIN_DURATION + (Math.abs(distance) / viewportHeight) * SCROLL_DURATION_PER_VIEWPORT,
+    );
     const startedAt = performance.now();
 
     const step = (now) => {
