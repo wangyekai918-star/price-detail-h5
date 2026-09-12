@@ -540,37 +540,18 @@
   }
 
   /**
-   * 计算当前卡片的页面滚动目标，并在页面尾部空间不足时写入最小补位高度。
-   * anticipatedHeightLoss 用于预补偿终端即将折叠造成的页面高度减少，避免滚动上限回收。
+   * 计算当前卡片的页面滚动目标，并限制在页面现有的自然滚动范围内。
    * @param {HTMLElement} currentCard
-   * @param {number} anticipatedHeightLoss
    * @returns {number}
    */
-  function getCurrentPeriodScrollTarget(currentCard, anticipatedHeightLoss = 0) {
-    dom.priceDetail.style.setProperty("--current-scroll-reserve", "0px");
-    // 强制刷新布局，避免沿用上一个策略为末段时留下的补位高度。
-    void dom.priceDetail.offsetHeight;
-
+  function getCurrentPeriodScrollTarget(currentCard) {
     const listPaddingTop = Number.parseFloat(getComputedStyle(dom.scheduleList).paddingTop) || 0;
     const headerHeight = dom.stickyHeader.getBoundingClientRect().height;
     const cardDocumentTop = window.scrollY + currentCard.getBoundingClientRect().top;
-    const target = Math.max(0, cardDocumentTop - headerHeight - listPaddingTop);
-    let reserve = 0;
-
-    // 当当前时段接近当天末尾时补足滚动空间，使目标卡片仍能定位到吸顶表头下方。
-    // 这里只改变页面 scrollY，不会重排配置中的时段数组。
-    // 短页面的首段补位可能先被 min-height 吸收，因此按实际最大滚动值迭代校准。
-    for (let index = 0; index < 3; index += 1) {
-      const scrollRoot = document.scrollingElement || document.documentElement;
-      const maxScroll = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight);
-      const missing = target + anticipatedHeightLoss - maxScroll;
-      if (missing <= 0.5) break;
-      reserve += Math.ceil(missing + 1);
-      dom.priceDetail.style.setProperty("--current-scroll-reserve", `${reserve}px`);
-      void dom.priceDetail.offsetHeight;
-    }
-
-    return target;
+    const desiredTarget = Math.max(0, cardDocumentTop - headerHeight - listPaddingTop);
+    const scrollRoot = document.scrollingElement || document.documentElement;
+    const maxScroll = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight);
+    return Math.min(desiredTarget, maxScroll);
   }
 
   function animateToCurrentPeriod(token) {
@@ -625,11 +606,11 @@
   /**
    * Tab 切换后的无动画定位，避免多个策略间来回切换时列表持续滚动。
    */
-  function positionCurrentPeriodImmediately(anticipatedHeightLoss = 0) {
+  function positionCurrentPeriodImmediately() {
     cancelCurrentPeriodScroll();
     const currentCard = dom.scheduleList.querySelector(".price-card.is-current");
     if (!currentCard) return;
-    window.scrollTo(0, getCurrentPeriodScrollTarget(currentCard, anticipatedHeightLoss));
+    window.scrollTo(0, getCurrentPeriodScrollTarget(currentCard));
   }
 
   // ---------------------------------------------------------------------------
@@ -737,8 +718,6 @@
     const normalized = normalizeStrategy(value);
     if (!normalized || !IMPLEMENTED_STRATEGIES.has(normalized) || !state.strategies.some((item) => item.id === normalized)) return false;
     if (normalized === state.strategy) return true;
-    const terminalWasCollapsed = dom.terminalSection.classList.contains("is-collapsed");
-    const terminalHeightBefore = dom.terminalSection.getBoundingClientRect().height;
     state.strategy = normalized;
     const activeIndex = state.strategies.findIndex((item) => item.id === state.strategy);
     dom.strategyTabs.style.setProperty("--tab-index", activeIndex);
@@ -750,10 +729,7 @@
     renderTerminals();
     renderSchedule();
     renderDefinitions();
-    const terminalIsCollapsed = dom.terminalSection.classList.contains("is-collapsed");
-    // 从立即充电切到无终端策略时，预留即将折叠的终端高度，避免浏览器回收 scrollY。
-    const anticipatedHeightLoss = !terminalWasCollapsed && terminalIsCollapsed ? terminalHeightBefore : 0;
-    positionCurrentPeriodImmediately(anticipatedHeightLoss);
+    positionCurrentPeriodImmediately();
     return true;
   }
 

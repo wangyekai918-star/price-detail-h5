@@ -65,8 +65,6 @@ button {
   max-width: 480px;
   min-height: 100dvh;
   margin-inline: auto;
-  /* JS 在末尾时段无法顶到表头下方时，动态写入最小滚动补位高度。 */
-  padding-bottom: var(--current-scroll-reserve, 0px);
   overflow-anchor: none;
   background: var(--bg-page);
 }
