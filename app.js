@@ -200,7 +200,7 @@
   // 首屏滚动在 DOM 稳定后启动；终端折叠总时长为 40ms 延迟 + 320ms 动画。
   const SCROLL_START_DELAY = 100;
   const HEADER_TRANSITION_DELAY = 380;
-  // 首屏定位统一使用固定 450ms，避免动态时长增加开发与验收复杂度。
+  // 首屏定位统一使用 450ms，保持各端动画节奏一致。
   const SCROLL_DURATION = 450;
 
   // 固定 DOM 查询集中管理；这些 id/class 与 index.html 构成内部契约。

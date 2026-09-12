@@ -139,8 +139,8 @@ button {
   height: 30px;
   padding: 2px;
   overflow: hidden;
-  /* 上一级容器保持直角，避免圆角边缘漏出页面灰底。 */
-  border-radius: 0;
+  /* Tab 灰色容器按设计保留 8px 圆角；外层页面容器不要复用这里的圆角。 */
+  border-radius: 8px;
   background: var(--bg-blue-gray);
 }
 
