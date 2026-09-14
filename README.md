@@ -1,5 +1,10 @@
 # 价格详情 H5 设计交付说明
 
+## 在线查看
+
+- [价格详情 H5 在线预览](https://wangyekai918-star.github.io/price-detail-h5/)
+- [价格详情 H5 UI 走查报告](https://wangyekai918-star.github.io/price-detail-h5/%E4%BB%B7%E6%A0%BC%E8%AF%A6%E6%83%85_UI%E8%B5%B0%E6%9F%A5%E6%8A%A5%E5%91%8A.html)
+
 ## 1. 页面范围
 
 本页面运行在 APP WebView 中，只实现策略切换、终端切换、分时价格列表和价格说明；顶部 APP 原生导航不在 H5 内重复实现。
